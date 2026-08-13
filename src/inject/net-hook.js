@@ -24,6 +24,35 @@
     }
   }
 
+  /**
+   * イベント ID は Nuxt がページの window に埋めているだけで、
+   * コンテンツスクリプト側（隔離ワールド）からは見えない。
+   * 拡張のシートページからも API を叩けるよう、こちらから渡す。
+   */
+  function postConfig() {
+    try {
+      const id = window.__NUXT__?.config?.public?.eventId;
+      if (id) window.postMessage({ __wch: 'wch-config', eventId: String(id) }, window.location.origin);
+    } catch (_) {}
+  }
+
+  // config は document_start の時点ではまだ無いので、出てくるまで少し待つ。
+  let tries = 0;
+  const timer = setInterval(() => {
+    tries++;
+    const has = (() => {
+      try {
+        return !!window.__NUXT__?.config?.public?.eventId;
+      } catch (_) {
+        return false;
+      }
+    })();
+    if (has || tries > 40) {
+      clearInterval(timer);
+      postConfig();
+    }
+  }, 250);
+
   /** サークルらしいオブジェクトを含む JSON かどうかの当たり判定。 */
   function looksRelevant(data) {
     let hit = false;

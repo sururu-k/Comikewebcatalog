@@ -10,13 +10,16 @@
   const api = root.browser?.storage ? root.browser : root.chrome;
   const KEY = 'wch.circles';
   const SETTINGS_KEY = 'wch.settings';
+  const ERRAND_KEY = 'wch.errands';
 
   const DEFAULT_SETTINGS = {
     autoCollect: true,      // 表示されたカードを黙って拾い続ける
     scrollStepMs: 700,      // 自動スクロールの待ち時間
     scrollMaxIdle: 3,       // 新着0がこの回数続いたら終了
     bulkIntervalMs: 450,    // 一括操作の1件あたり待ち時間
-    bulkMaxItems: 300       // 一括操作の安全上限
+    bulkMaxItems: 300,      // 一括操作の安全上限
+    eventId: '230',         // サイトから拾えたら上書きされる
+    errandLines: 2          // お使いメモが空のとき、手書き用に引く罫線の本数
   };
 
   function get(key, fallback) {
@@ -81,6 +84,65 @@
     await set(KEY, {});
   }
 
+  // --- 自分用のメモ（お使い・優先度・予算） -------------------------------
+  //
+  // サイト側のお気に入りメモとは別に、拡張の中だけで持つ欄。
+  // 「誰に頼まれた」「何を何冊」を書くお使いメモ、回る順を決めるための優先度、
+  // いくら使う見込みかの予算を、wcid をキーにまとめて持つ。
+  //
+  // 頒布物の価格はサイトが公開していない（API の priceDisplay が false）ので、
+  // 金額は自分で入れる前提。
+  //
+  //   { "23004131": { errand: "○○さんに2冊", priority: 1, budget: 3000 } }
+
+  const PRIORITIES = [
+    { value: 0, label: '—', mark: '' },
+    { value: 1, label: '高', mark: '◎' },
+    { value: 2, label: '中', mark: '○' },
+    { value: 3, label: '低', mark: '△' }
+  ];
+
+  function cleanNote(n) {
+    const out = {};
+    const errand = (n.errand || '').trim();
+    const priority = Number(n.priority) || 0;
+    const budget = Number(n.budget) || 0;
+    if (errand) out.errand = errand;
+    if (priority) out.priority = priority;
+    if (budget > 0) out.budget = budget;
+    return out;
+  }
+
+  async function loadNotes() {
+    return await get(ERRAND_KEY, {});
+  }
+
+  async function getNote(wcid) {
+    const all = await loadNotes();
+    return all[String(wcid)] || {};
+  }
+
+  /** 渡した項目だけを差し替える。空になった項目は消す。 */
+  async function setNotes(map) {
+    const all = await loadNotes();
+    for (const [wcid, patch] of Object.entries(map)) {
+      const id = String(wcid);
+      const merged = cleanNote({ ...(all[id] || {}), ...patch });
+      if (Object.keys(merged).length) all[id] = merged;
+      else delete all[id];
+    }
+    await set(ERRAND_KEY, all);
+    return all;
+  }
+
+  async function setNote(wcid, patch) {
+    return await setNotes({ [wcid]: patch });
+  }
+
+  async function clearNotes() {
+    await set(ERRAND_KEY, {});
+  }
+
   async function loadSettings() {
     const s = await get(SETTINGS_KEY, {});
     return { ...DEFAULT_SETTINGS, ...s };
@@ -96,11 +158,18 @@
   root.WCH = root.WCH || {};
   root.WCH.store = {
     KEY,
+    ERRAND_KEY,
     DEFAULT_SETTINGS,
     loadAll,
     loadList,
     upsert,
     clear,
+    PRIORITIES,
+    loadNotes,
+    getNote,
+    setNote,
+    setNotes,
+    clearNotes,
     loadSettings,
     saveSettings
   };

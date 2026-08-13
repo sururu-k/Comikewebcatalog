@@ -1,0 +1,161 @@
+/* 紙に出すことが前提なので、画面も白地・黒文字で組んでいる。 */
+
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 18px 22px 40px;
+  background: #fff;
+  color: #111;
+  font: 13px/1.5 "Yu Gothic UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.top {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  border-bottom: 3px solid #111;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+h1 { font-size: 20px; margin: 0; }
+.sub { color: #666; font-size: 13px; }
+
+.total { font-size: 13px; font-weight: 600; color: #2f5d9e; }
+.controls { margin-left: auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.controls select { padding: 2px 4px; font: inherit; }
+.controls label { font-size: 12px; color: #444; display: flex; align-items: center; gap: 4px; }
+.controls input[type="number"] { width: 46px; padding: 2px 4px; font: inherit; }
+.controls button {
+  padding: 7px 15px; font: inherit; cursor: pointer;
+  background: #eee; color: #111; border: 1px solid #bbb; border-radius: 6px;
+}
+.controls button:hover { background: #e2e2e2; }
+.controls button.primary { background: #2f5d9e; color: #fff; border-color: #2f5d9e; font-weight: 600; }
+.controls button.primary:hover { background: #3a6cb4; }
+
+.note {
+  background: #f4f7fb; border: 1px solid #cfdcec; border-radius: 6px;
+  padding: 7px 10px; font-size: 12px; color: #33506f; margin-bottom: 12px;
+}
+
+.progress { color: #666; font-size: 13px; padding: 10px 0; }
+.progress.error { color: #a11; font-weight: 600; }
+.progress.done { display: none; }
+
+/* --- エリア --- */
+
+article.area { break-before: page; margin-bottom: 26px; }
+article.area:first-of-type { break-before: auto; }
+article.area > header {
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  border-bottom: 2px solid #111; padding-bottom: 4px; margin-bottom: 10px;
+}
+h2 { font-size: 17px; margin: 0; }
+.meta { color: #555; font-size: 12px; }
+
+.map { border: 1px solid #bbb; margin-bottom: 14px; background: #fafafa; }
+.map svg { display: block; width: 100%; height: auto; max-height: 62vh; }
+.paper { fill: #fff; }
+.sp { fill: #e4e4e8; stroke: #fff; stroke-width: .5; }
+.halo { fill: none; stroke-width: 3; opacity: .55; }
+.route { fill: none; stroke: #2f5d9e; stroke-width: 5; stroke-dasharray: 14 10; stroke-linejoin: round; opacity: .85; }
+.badge circle { fill: #2f5d9e; }
+.badge text { fill: #fff; font-size: 22px; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+
+/* --- 島とサークル --- */
+
+.islands { column-width: 350px; column-gap: 22px; }
+section.island { break-inside: avoid; margin-bottom: 14px; }
+h3 {
+  font-size: 13px; margin: 0 0 5px; display: flex; align-items: center; gap: 7px;
+  border-bottom: 1px solid #999; padding-bottom: 3px;
+}
+h3 .no {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 19px; height: 19px; border-radius: 50%; background: #2f5d9e; color: #fff;
+  font-size: 11px; flex: none;
+}
+h3 small { font-weight: normal; color: #888; margin-left: auto; }
+
+.ci { break-inside: avoid; padding: 4px 0 5px; border-bottom: 1px solid #e2e2e2; }
+.ci .head { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.ci .chk { width: 11px; height: 11px; border: 1px solid #777; flex: none; align-self: center; }
+.ci .sw { width: 9px; height: 9px; border: 1px solid #555; flex: none; align-self: center; }
+.ci .sp { font-family: Consolas, monospace; white-space: nowrap; font-size: 12px; min-width: 52px; }
+.ci .nm { font-weight: 600; }
+.ci .wr { color: #777; font-size: 11px; }
+.ci .newbadge { background: #c33; color: #fff; font-size: 10px; padding: 0 4px; border-radius: 3px; }
+
+/* 優先度 */
+.ci .pri { flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 16px; font-size: 13px; font-weight: 700; }
+.ci .pri.p1 { color: #c33; }
+.ci .pri.p2 { color: #2f5d9e; }
+.ci .pri.p3 { color: #888; }
+.ci .pri select { font: inherit; color: inherit; border: 1px solid #ddd; border-radius: 3px; background: #fff; padding: 0 1px; cursor: pointer; }
+.ci .pri.p0 select { color: #ccc; }
+
+/* 予算 */
+.ci .bg { margin-left: auto; flex: none; font-size: 11.5px; color: #333; white-space: nowrap; }
+.ci .bg input { width: 62px; padding: 1px 3px; font: inherit; text-align: right; border: 1px solid #ddd; border-radius: 3px; }
+.ci .bg input:focus { background: #fffbe6; outline: 0; border-color: #2f5d9e; }
+
+.sum { font-size: 12px; color: #2f5d9e; font-weight: 600; }
+.hidden { display: none !important; }
+
+.ci .bk { margin: 2px 0 0 17px; font-size: 11px; color: #333; }
+.ci .bk .b { display: block; }
+.ci .bk .new { background: #c33; color: #fff; font-style: normal; font-size: 9px; padding: 0 3px; border-radius: 2px; margin-right: 4px; }
+.ci .bk em { color: #888; font-style: normal; margin-left: 5px; }
+.ci .ex { margin: 1px 0 0 17px; font-size: 10.5px; color: #7a5; }
+.ci .sm { margin: 2px 0 0 17px; font-size: 11px; color: #555; }
+.ci .sm::before { content: "メモ: "; color: #999; }
+
+/* お使いメモ */
+.ci .errand { margin: 3px 0 0 17px; display: flex; align-items: flex-start; gap: 5px; font-size: 11.5px; }
+.ci .errand .tag {
+  flex: none; background: #2f5d9e; color: #fff; font-size: 9.5px;
+  padding: 1px 5px; border-radius: 3px; margin-top: 1px;
+}
+.ci .errand .body { flex: 1; min-height: 1.4em; white-space: pre-wrap; word-break: break-word; }
+.ci .errand .body[contenteditable] { outline: 0; border-bottom: 1px dashed #bbb; padding: 0 2px 1px; }
+.ci .errand .body[contenteditable]:focus { background: #fffbe6; border-bottom-color: #2f5d9e; }
+.ci .errand .body[contenteditable]:empty::before { content: "クリックして書く"; color: #bbb; }
+/* 罫線は手書き用なので紙のときだけ出す。画面では下線付きの入力欄だけでよい。 */
+.ci .errand .ruled { display: none; }
+
+.leftover { margin-top: 20px; padding: 10px 12px; border: 1px dashed #b08; border-radius: 6px; }
+.leftover h2 { font-size: 14px; border: 0; }
+
+@page { size: A4 landscape; margin: 10mm; }
+
+@media print {
+  body { padding: 0; }
+  .controls, .note, .progress { display: none; }
+  .top { margin-bottom: 8px; }
+  .map svg { max-height: 112mm; }
+  /* 印刷時は入力欄の枠線を消す。何も書いていない欄は手書き用の罫線に差し替える */
+  .ci .errand .body[contenteditable] { border-bottom: 0; }
+  .ci .errand .body[contenteditable]:empty::before { content: ""; }
+  .ci .errand:not(.has) .body { display: none; }
+  .ci .errand:not(.has) .ruled {
+    flex: 1; display: block;
+    background-image: repeating-linear-gradient(#fff 0 calc(1.5em - 1px), #bbb calc(1.5em - 1px) 1.5em);
+    height: calc(1.5em * var(--lines, 2));
+  }
+  .ci .errand:not(.has) .ruled[style*="--lines:0"] { display: none; }
+
+  /* 優先度は選択欄ではなく記号だけにする。未設定は空欄にして手書きで丸を付けられるように */
+  .ci .pri select { display: none; }
+  .ci .pri::before { content: attr(data-mark); }
+
+  /* 予算は入力欄ではなく数字だけ。未入力は下線を残して手書きできるように */
+  .ci .bg input { border: 0; padding: 0; background: none; -moz-appearance: textfield; appearance: textfield; }
+  .ci .bg input::-webkit-outer-spin-button,
+  .ci .bg input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .ci .bg.blank input { border-bottom: 1px solid #bbb; }
+  .total { display: block; }
+}

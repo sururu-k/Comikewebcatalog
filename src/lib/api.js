@@ -26,13 +26,20 @@
 
   const BASE = 'https://webcatalog.circle.ms';
 
-  // config は Nuxt がページに埋めている。取れなければ既定値。
+  // イベント ID。サイト上では Nuxt の config から拾えるが、拡張のページには
+  // それが無いので、拾えたときに保存しておいて使い回す。
+  let EVENT_ID = '230';
+
   function eventId() {
     try {
       const id = root.__NUXT__?.config?.public?.eventId;
       if (id) return String(id);
     } catch (_) {}
-    return '230';
+    return EVENT_ID;
+  }
+
+  function setEventId(id) {
+    if (id) EVENT_ID = String(id);
   }
 
   let cached = null; // {token, expires}
@@ -173,6 +180,7 @@
   root.WCH.api = {
     BASE,
     eventId,
+    setEventId,
     token,
     call,
     getFavorites,

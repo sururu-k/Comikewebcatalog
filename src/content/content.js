@@ -17,6 +17,14 @@
     collect.startNetListener();
 
     const settings = await store.loadSettings();
+
+    // イベント ID はサイトの Nuxt config にしか無い。拡張のシートページからも
+    // API を叩けるよう、見えたときに控えておく。
+    const id = root.__NUXT__?.config?.public?.eventId;
+    if (id && String(id) !== String(settings.eventId)) {
+      await store.saveSettings({ eventId: String(id) });
+    }
+
     if (settings.autoCollect) collect.startObserver();
 
     panel.ensure();

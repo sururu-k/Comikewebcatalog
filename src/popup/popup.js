@@ -61,6 +61,11 @@
 
   // --- 操作 --------------------------------------------------------------
 
+  // 巡回シートは拡張のページなので、サイトのタブを開いていなくても出せる。
+  $('sheet').addEventListener('click', () => {
+    api.runtime.sendMessage({ type: 'open-sheet' }, () => window.close());
+  });
+
   $('panel').addEventListener('click', async () => {
     await send({ type: 'toggle-panel' });
     window.close();

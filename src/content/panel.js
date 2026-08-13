@@ -5,7 +5,9 @@
 (function (root) {
   'use strict';
 
-  const { store, collect, bulk, route, serialize, scrape, favorites } = root.WCH;
+  // WCH.build はパネル自身の build() と名前がぶつかるので別名で受ける。
+  const { store, collect, bulk, route, serialize, scrape, build: dataBuild } = root.WCH;
+  const runtime = (root.browser?.runtime ? root.browser : root.chrome).runtime;
 
   let el = null;
   let statusEl = null;
@@ -122,30 +124,19 @@
     status(`巡回リストを新しいタブで開きました（${n} 件）`);
   }
 
-  /** API から取り直して、配置図つきの巡回シートを開く。 */
-  async function doSheet(button) {
-    const label = button.textContent;
-    button.disabled = true;
-    try {
-      const res = await favorites.openSheet((m) => status(m));
-      if (res.error) return status(res.error);
-      status(
-        `巡回シートを開きました：${res.total} 件 / ${res.areas} エリア` +
-          (res.leftovers ? `（配置不明 ${res.leftovers} 件）` : '')
-      );
-    } catch (e) {
-      status(`失敗: ${e.message}`);
-    } finally {
-      button.disabled = false;
-      button.textContent = label;
-    }
+  /** 巡回シートを開く。中身の取得はシート側のページがやる。 */
+  function doSheet() {
+    status('巡回シートのタブを開きます…');
+    runtime.sendMessage({ type: 'open-sheet' }, (res) => {
+      status(res?.ok ? '巡回シートを開きました' : `開けませんでした: ${res?.error || '不明'}`);
+    });
   }
 
-  /** API のお気に入り情報を保存データに取り込む。 */
+  /** API のお気に入り情報（頒布物・書店リンク込み）を保存データに取り込む。 */
   async function doSync(button) {
     button.disabled = true;
     try {
-      const s = await favorites.syncToStore((m) => status(m));
+      const s = await dataBuild.syncToStore((m) => status(m));
       status(`API から取込：新規 ${s.added} / 更新 ${s.updated} / 合計 ${s.total}`);
       refreshCount();
     } catch (e) {
@@ -300,7 +291,7 @@
     ]);
 
     const collectBtn = btn('一覧を最後まで収集', () => doAutoCollect(collectBtn), 'wch-primary');
-    const sheetBtn = btn('配置図つき巡回シートを作る', () => doSheet(sheetBtn), 'wch-primary');
+    const sheetBtn = btn('配置図つき巡回シートを開く', doSheet, 'wch-primary');
     const syncBtn = btn('お気に入りを API から取込', () => doSync(syncBtn));
     const addBtn = btn('登録', () => doBulkToggle(scopeSelect, 'add', addBtn, '登録'));
     const removeBtn = btn('解除', () => doBulkToggle(scopeSelect, 'remove', removeBtn, '解除'));
