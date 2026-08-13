@@ -156,8 +156,9 @@
         return;
       }
 
-      progress('巡回順を計算中…');
-      state.groups = plan.buildPlan(items);
+      progress('通路をたどって巡回順を計算中…');
+      // 通路上の最短経路で測るため、配置図のジオメトリも渡す
+      state.groups = plan.buildPlan(items, { geoByArea, sizeByArea });
       state.leftovers = plan.withoutGeo(items);
       state.geoByArea = geoByArea;
       state.sizeByArea = sizeByArea;

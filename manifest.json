@@ -45,6 +45,7 @@
         "src/lib/store.js",
         "src/lib/api.js",
         "src/lib/detail.js",
+        "src/lib/grid.js",
         "src/lib/plan.js",
         "src/lib/build.js",
         "src/content/selectors.js",

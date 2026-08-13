@@ -60,7 +60,11 @@
       );
     }
 
-    const pts = group.islands.map((i) => `${i.pos.x * sw},${i.pos.y * sh}`).join(' ');
+    // 経路は通路のマスを辿った線。マスの中心を通す。
+    // 配置図が無くて通路を計算できなかったときだけ、島どうしを直線で結ぶ。
+    const pts = group.route && group.route.length
+      ? group.route.map(([x, y]) => `${(x + 0.5) * sw},${(y + 0.5) * sh}`).join(' ')
+      : group.islands.map((i) => `${i.pos.x * sw},${i.pos.y * sh}`).join(' ');
     const line = pts ? `<polyline class="route" points="${pts}"/>` : '';
 
     return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img">
@@ -178,12 +182,13 @@
   function renderGroup(group, allGeo, size, opts) {
     const s = group.stats;
     const saved = s.savedRatio > 0.005 ? `（ブロック名順より ${Math.round(s.savedRatio * 100)}% 短い）` : '';
+    const note = s.walkable === false ? '<span class="warn">通路データ無し・直線概算</span>' : '';
     const items = group.islands.flatMap((i) => i.items);
     const sum = summarize(items);
     return `<article class="area" data-key="${esc(group.day)}|${esc(group.area)}">
       <header>
         <h2>${esc(group.day)}日目 ${esc(group.areaName)}</h2>
-        <div class="meta">${s.circles} サークル / ${s.islands} 島 ・ 移動 約 ${Math.round(s.meters)} m ${saved}</div>
+        <div class="meta">${s.circles} サークル / ${s.islands} 島 ・ 歩く距離 約 ${Math.round(s.meters)} m ${saved} ${note}</div>
         <div class="sum" data-sum>${summaryText(sum)}</div>
       </header>
       ${opts.showMap ? `<div class="map">${renderMap(group, allGeo, size)}</div>` : ''}

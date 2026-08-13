@@ -152,14 +152,74 @@
     return tailD < headD ? items.slice().reverse() : items;
   }
 
+  // --- 通路上の距離を使った並べ替え ---------------------------------------
+
+  /** 距離行列（[from][to]、単位はスペース個数）を使った最近傍法。 */
+  function nearestNeighborMatrix(n, distFn, startFrom) {
+    const rest = [];
+    for (let i = 0; i < n; i++) rest.push(i);
+    const order = [];
+    let cur = startFrom;
+    while (rest.length) {
+      let bi = 0;
+      let bd = Infinity;
+      for (let k = 0; k < rest.length; k++) {
+        const d = distFn(cur, rest[k]);
+        if (d < bd) {
+          bd = d;
+          bi = k;
+        }
+      }
+      const next = rest.splice(bi, 1)[0];
+      order.push(next);
+      cur = next;
+    }
+    return order;
+  }
+
+  function matrixLength(order, distFn, startFrom) {
+    let total = 0;
+    let cur = startFrom;
+    for (const i of order) {
+      total += distFn(cur, i);
+      cur = i;
+    }
+    return total;
+  }
+
+  function twoOptMatrix(order, distFn, startFrom, maxPasses = 40) {
+    let best = order.slice();
+    let bestLen = matrixLength(best, distFn, startFrom);
+    for (let pass = 0; pass < maxPasses; pass++) {
+      let improved = false;
+      for (let i = 0; i < best.length - 1; i++) {
+        for (let k = i + 1; k < best.length; k++) {
+          const cand = best.slice(0, i).concat(best.slice(i, k + 1).reverse(), best.slice(k + 1));
+          const len = matrixLength(cand, distFn, startFrom);
+          if (len < bestLen - 1e-9) {
+            best = cand;
+            bestLen = len;
+            improved = true;
+          }
+        }
+      }
+      if (!improved) break;
+    }
+    return { order: best, length: bestLen };
+  }
+
   /**
    * 巡回計画を作る。
    *
+   * 島どうしの距離は直線ではなく、机を避けた通路上の最短経路で測る。
+   * 直線で測ると机の上を突っ切る経路になり、描いた線も距離も実際と合わない。
+   * 配置図のジオメトリが渡されなかった場合だけ、直線での概算に落ちる。
+   *
    * @param {Array} items  ジオメトリ付きのお気に入り
-   * @param {{startCorner?:'south'|'north'}} [opts]
-   * @returns {Array<{day, area, areaName, islands:Array, stats:object}>}
+   * @param {{geoByArea?:Map, sizeByArea?:Map, startCorner?:'south'|'north'}} [opts]
    */
   function buildPlan(items, opts = {}) {
+    const gridLib = root.WCH.grid;
     const withGeo = items.filter((i) => i.pos);
     const groups = new Map();
 
@@ -175,39 +235,110 @@
       const islands = buildIslands(list);
       if (!islands.length) continue;
 
+      const allGeo = opts.geoByArea?.get(key);
+      const size = opts.sizeByArea?.get(key);
+      const grid = gridLib && allGeo && allGeo.length ? gridLib.build(allGeo, size) : null;
+
       // 入口の位置は API から取れないので、南側（y が大きい方）の端を起点とみなす。
-      const ys = islands.map((i) => i.pos.y);
       const xs = islands.map((i) => i.pos.x);
-      const start =
+      const ys = islands.map((i) => i.pos.y);
+      const startPos =
         opts.startCorner === 'north'
           ? { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: Math.min(...ys) }
           : { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: Math.max(...ys) };
 
-      const naiveLen = pathLength(
-        islands.slice().sort((a, b) => String(a.block).localeCompare(String(b.block), 'ja')),
-        start
-      );
-      const nn = nearestNeighbor(islands, start);
-      const { order, length } = twoOpt(nn, start);
+      const alpha = islands.slice().sort((a, b) => String(a.block).localeCompare(String(b.block), 'ja'));
 
-      let cursor = start;
+      if (!grid) {
+        // 配置図が無いときだけ直線で概算する
+        const naiveLen = pathLength(alpha, startPos);
+        const nn = nearestNeighbor(islands, startPos);
+        const { order, length } = twoOpt(nn, startPos);
+        let cursor = startPos;
+        for (const island of order) {
+          island.items = orientIsland(island, cursor);
+          cursor = island.items[island.items.length - 1].pos;
+        }
+        out.push({
+          day, area, areaName: list[0].areaName || area, islands: order, route: null,
+          stats: {
+            circles: list.length, islands: order.length, length, naiveLength: naiveLen,
+            savedRatio: naiveLen > 0 ? 1 - length / naiveLen : 0,
+            meters: length * METERS_PER_SPACE, walkable: false, unreachable: 0
+          }
+        });
+        continue;
+      }
+
+      // 各島の「立てるマス」を決める
+      const startCell = gridLib.nearestFree(grid, startPos.x, startPos.y);
+      for (const island of islands) {
+        const rect = island.items[0].geo?.space || island.items[0].geo?.cut;
+        island.cell = gridLib.accessCell(grid, rect, island.pos) || gridLib.nearestFree(grid, island.pos.x, island.pos.y);
+      }
+
+      // 起点と各島からの通路上の距離を一度ずつ求める
+      const fields = islands.map((i) => gridLib.distances(grid, i.cell));
+      const startField = gridLib.distances(grid, startCell);
+      const costAt = (field, cell) => {
+        if (!cell) return -1;
+        return field.dist[cell[1] * grid.W + cell[0]];
+      };
+
+      let unreachable = 0;
+      const distFn = (from, to) => {
+        const field = from === -1 ? startField : fields[from];
+        const c = costAt(field, islands[to].cell);
+        if (c < 0) {
+          unreachable++;
+          // 通路で繋がらないときは直線で代用する（島の中に入り込めない配置など）
+          const a = from === -1 ? startPos : islands[from].pos;
+          return dist(a, islands[to].pos) * gridLib.ORTH;
+        }
+        return c;
+      };
+
+      const nn = nearestNeighborMatrix(islands.length, distFn, -1);
+      const { order: orderIdx, length: cost } = twoOptMatrix(nn, distFn, -1);
+      const naiveCost = matrixLength(alpha.map((i) => islands.indexOf(i)), distFn, -1);
+
+      const order = orderIdx.map((i) => islands[i]);
+
+      // 実際に歩く線を、通路のマスを辿って作る
+      const cells = [];
+      let fromIdx = -1;
+      for (const i of orderIdx) {
+        const field = fromIdx === -1 ? startField : fields[fromIdx];
+        const seg = gridLib.pathTo(grid, field.prev, islands[i].cell);
+        if (seg.length) cells.push(...(cells.length ? seg.slice(1) : seg));
+        fromIdx = i;
+      }
+      const route = gridLib.simplify(cells);
+
+      let cursor = startPos;
       for (const island of order) {
         island.items = orientIsland(island, cursor);
         cursor = island.items[island.items.length - 1].pos;
       }
+
+      const length = gridLib.toSpaces(cost);
+      const naiveLength = gridLib.toSpaces(naiveCost);
 
       out.push({
         day,
         area,
         areaName: list[0].areaName || area,
         islands: order,
+        route,
         stats: {
           circles: list.length,
           islands: order.length,
           length,
-          naiveLength: naiveLen,
-          savedRatio: naiveLen > 0 ? 1 - length / naiveLen : 0,
-          meters: length * METERS_PER_SPACE
+          naiveLength,
+          savedRatio: naiveLength > 0 ? 1 - length / naiveLength : 0,
+          meters: length * METERS_PER_SPACE,
+          walkable: true,
+          unreachable
         }
       });
     }
