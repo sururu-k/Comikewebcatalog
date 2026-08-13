@@ -8,4 +8,5 @@ chunks/
 *.pdf
 *.png
 !icons/*.png
+!docs/images/*.png
 node_modules/
