@@ -1,144 +1,219 @@
 /* 紙に出すことが前提なので、画面も白地・黒文字で組んでいる。 */
 
-:root { color-scheme: light; }
+:root {
+  color-scheme: light;
+  --ink: #1a1a1c;
+  --sub: #6b6b70;
+  --line: #e3e3e6;
+  --accent: #2f5d9e;
+  --bg-soft: #f6f6f8;
+}
 * { box-sizing: border-box; }
+
+/* display を指定した要素だと hidden 属性が効かなくなるので、明示的に打ち消す */
+[hidden] { display: none !important; }
 
 body {
   margin: 0;
-  padding: 18px 22px 40px;
+  padding: 0 26px 60px;
   background: #fff;
-  color: #111;
-  font: 13px/1.5 "Yu Gothic UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  color: var(--ink);
+  font: 13px/1.55 "Yu Gothic UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
+/* --- 見出し --- */
+
 .top {
   display: flex;
-  align-items: baseline;
-  gap: 14px;
-  flex-wrap: wrap;
-  border-bottom: 3px solid #111;
-  padding-bottom: 8px;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 0 14px;
+  position: sticky;
+  top: 0;
+  background: rgba(255, 255, 255, .94);
+  backdrop-filter: saturate(180%) blur(12px);
+  z-index: 20;
+  border-bottom: 1px solid var(--line);
 }
-h1 { font-size: 20px; margin: 0; }
-.sub { color: #666; font-size: 13px; }
+.ttl { min-width: 0; }
+h1 { font-size: 21px; letter-spacing: -.01em; margin: 0; }
+.sub { color: var(--sub); font-size: 12.5px; margin: 2px 0 0; }
 
-.total { font-size: 13px; font-weight: 600; color: #2f5d9e; }
-.controls { margin-left: auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.controls select { padding: 2px 4px; font: inherit; }
-.controls label { font-size: 12px; color: #444; display: flex; align-items: center; gap: 4px; }
-.controls input[type="number"] { width: 46px; padding: 2px 4px; font: inherit; }
-.controls button {
-  padding: 7px 15px; font: inherit; cursor: pointer;
-  background: #eee; color: #111; border: 1px solid #bbb; border-radius: 6px;
+/* 切り替え（巡回シート / お使いだけ） */
+.seg {
+  margin-left: auto;
+  display: inline-flex;
+  background: var(--bg-soft);
+  border-radius: 9px;
+  padding: 3px;
+  flex: none;
 }
-.controls button:hover { background: #e2e2e2; }
-.controls button.primary { background: #2f5d9e; color: #fff; border-color: #2f5d9e; font-weight: 600; }
-.controls button.primary:hover { background: #3a6cb4; }
-
-.note {
-  background: #f4f7fb; border: 1px solid #cfdcec; border-radius: 6px;
-  padding: 7px 10px; font-size: 12px; color: #33506f; margin-bottom: 12px;
+.seg button {
+  border: 0; background: none; font: inherit; color: var(--sub);
+  padding: 6px 15px; border-radius: 7px; cursor: pointer; white-space: nowrap;
 }
+.seg button.on { background: #fff; color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.14); }
 
-.progress { color: #666; font-size: 13px; padding: 10px 0; }
+button.primary {
+  flex: none;
+  padding: 9px 18px; font: inherit; font-weight: 600; cursor: pointer;
+  background: var(--accent); color: #fff; border: 0; border-radius: 9px;
+}
+button.primary:hover { background: #3a6cb4; }
+
+/* --- 2段目のバー --- */
+
+.bar { display: flex; align-items: center; gap: 10px; padding: 10px 0 0; }
+.bar .spacer { flex: 1; }
+.total { font-size: 13px; font-weight: 600; color: var(--accent); }
+
+button.ghost {
+  border: 1px solid var(--line); background: #fff; color: var(--sub);
+  font: inherit; padding: 5px 12px; border-radius: 7px; cursor: pointer;
+}
+button.ghost:hover { background: var(--bg-soft); color: var(--ink); }
+
+.opts {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  margin-top: 10px; padding: 11px 14px;
+  background: var(--bg-soft); border-radius: 10px; font-size: 12.5px; color: #444;
+}
+.opts label { display: flex; align-items: center; gap: 5px; }
+.opts input[type="number"] { width: 46px; padding: 3px 5px; font: inherit; border: 1px solid var(--line); border-radius: 5px; }
+.opts select { padding: 3px 5px; font: inherit; border: 1px solid var(--line); border-radius: 5px; background: #fff; }
+
+.hint {
+  position: relative;
+  margin: 12px 0 0; padding: 10px 34px 10px 13px;
+  background: #f2f7fd; border: 1px solid #d6e4f5; border-radius: 10px;
+  font-size: 12.5px; color: #33506f;
+}
+.hint b { font-weight: 600; }
+.hint .x {
+  position: absolute; top: 6px; right: 8px;
+  border: 0; background: none; color: #7d93ad; font-size: 16px; line-height: 1; cursor: pointer; padding: 2px 5px;
+}
+.hint .x:hover { color: #33506f; }
+
+/* --- 読み込み中 --- */
+
+.progress { display: flex; align-items: center; gap: 9px; color: var(--sub); font-size: 13px; padding: 26px 0; }
 .progress.error { color: #a11; font-weight: 600; }
-.progress.done { display: none; }
+.progress.error .spin { display: none; }
+.spin {
+  width: 15px; height: 15px; flex: none; border-radius: 50%;
+  border: 2px solid var(--line); border-top-color: var(--accent);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty { padding: 60px 0; text-align: center; color: var(--sub); line-height: 1.9; }
 
 /* --- エリア --- */
 
-article.area { break-before: page; margin-bottom: 26px; }
+article.area { break-before: page; margin: 22px 0 26px; }
 article.area:first-of-type { break-before: auto; }
 article.area > header {
   display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
-  border-bottom: 2px solid #111; padding-bottom: 4px; margin-bottom: 10px;
+  border-bottom: 2px solid var(--ink); padding-bottom: 5px; margin-bottom: 11px;
 }
-h2 { font-size: 17px; margin: 0; }
+h2 { font-size: 17px; margin: 0; letter-spacing: -.01em; }
 .meta { color: #555; font-size: 12px; }
+.meta .warn { color: #a55; border: 1px solid #d9b0b0; border-radius: 3px; padding: 0 4px; margin-left: 4px; }
+.sum { font-size: 12px; color: var(--accent); font-weight: 600; margin-left: auto; }
 
-.map { border: 1px solid #bbb; margin-bottom: 14px; background: #fafafa; }
+.map { border: 1px solid #d8d8dc; border-radius: 8px; overflow: hidden; margin-bottom: 15px; background: #fafafa; }
 .map svg { display: block; width: 100%; height: auto; max-height: 62vh; }
 .paper { fill: #fff; }
 .sp { fill: #e4e4e8; stroke: #fff; stroke-width: .5; }
 .halo { fill: none; stroke-width: 3; opacity: .55; }
-.route { fill: none; stroke: #2f5d9e; stroke-width: 5; stroke-dasharray: 14 10; stroke-linejoin: round; opacity: .85; }
-.badge circle { fill: #2f5d9e; }
+.route { fill: none; stroke: var(--accent); stroke-width: 5; stroke-dasharray: 14 10; stroke-linejoin: round; opacity: .85; }
+.badge circle { fill: var(--accent); }
 .badge text { fill: #fff; font-size: 22px; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
 
 /* --- 島とサークル --- */
 
-.islands { column-width: 350px; column-gap: 22px; }
+.islands { column-width: 350px; column-gap: 24px; }
 section.island { break-inside: avoid; margin-bottom: 14px; }
 h3 {
   font-size: 13px; margin: 0 0 5px; display: flex; align-items: center; gap: 7px;
-  border-bottom: 1px solid #999; padding-bottom: 3px;
+  border-bottom: 1px solid #bbb; padding-bottom: 3px;
 }
 h3 .no {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 19px; height: 19px; border-radius: 50%; background: #2f5d9e; color: #fff;
+  width: 19px; height: 19px; border-radius: 50%; background: var(--accent); color: #fff;
   font-size: 11px; flex: none;
 }
-h3 small { font-weight: normal; color: #888; margin-left: auto; }
+h3 small { font-weight: normal; color: #999; margin-left: auto; }
 
-.ci { break-inside: avoid; padding: 4px 0 5px; border-bottom: 1px solid #e2e2e2; }
+.ci { break-inside: avoid; padding: 5px 0 6px; border-bottom: 1px solid #ececef; }
 .ci .head { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
-.ci .chk { width: 11px; height: 11px; border: 1px solid #777; flex: none; align-self: center; }
-.ci .sw { width: 9px; height: 9px; border: 1px solid #555; flex: none; align-self: center; }
+.ci .chk { width: 11px; height: 11px; border: 1px solid #888; flex: none; align-self: center; border-radius: 2px; }
+.ci .sw { width: 9px; height: 9px; border: 1px solid #666; flex: none; align-self: center; border-radius: 2px; }
 .ci .sp { font-family: Consolas, monospace; white-space: nowrap; font-size: 12px; min-width: 52px; }
 .ci .nm { font-weight: 600; }
-.ci .wr { color: #777; font-size: 11px; }
+.ci .wr { color: #808085; font-size: 11px; }
 .ci .newbadge { background: #c33; color: #fff; font-size: 10px; padding: 0 4px; border-radius: 3px; }
 
-/* 優先度 */
+/* スペースとサークル名を押すと、サイトのそのサークルのところが開く */
+.ci a.go {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  color: inherit; text-decoration: none; border-radius: 4px; padding: 1px 3px; margin: -1px -3px;
+  cursor: pointer;
+}
+.ci a.go:hover { background: #eaf1fb; }
+.ci a.go:hover .nm { color: var(--accent); }
+
 .ci .pri { flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 16px; font-size: 13px; font-weight: 700; }
 .ci .pri.p1 { color: #c33; }
-.ci .pri.p2 { color: #2f5d9e; }
-.ci .pri.p3 { color: #888; }
-.ci .pri select { font: inherit; color: inherit; border: 1px solid #ddd; border-radius: 3px; background: #fff; padding: 0 1px; cursor: pointer; }
-.ci .pri.p0 select { color: #ccc; }
+.ci .pri.p2 { color: var(--accent); }
+.ci .pri.p3 { color: #999; }
+.ci .pri select { font: inherit; color: inherit; border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: 1px 2px; cursor: pointer; }
+.ci .pri.p0 select { color: #c8c8cc; }
 
-/* 予算 */
 .ci .bg { margin-left: auto; flex: none; font-size: 11.5px; color: #333; white-space: nowrap; }
-.ci .bg input { width: 62px; padding: 1px 3px; font: inherit; text-align: right; border: 1px solid #ddd; border-radius: 3px; }
-.ci .bg input:focus { background: #fffbe6; outline: 0; border-color: #2f5d9e; }
+.ci .bg input { width: 66px; padding: 2px 5px; font: inherit; text-align: right; border: 1px solid var(--line); border-radius: 5px; }
+.ci .bg input:focus { background: #fffbe6; outline: 0; border-color: var(--accent); }
 
-.sum { font-size: 12px; color: #2f5d9e; font-weight: 600; }
-.meta .warn { color: #a55; border: 1px solid #d9b0b0; border-radius: 3px; padding: 0 4px; margin-left: 4px; }
-.hidden { display: none !important; }
-
-.ci .bk { margin: 2px 0 0 17px; font-size: 11px; color: #333; }
+.ci .bk { margin: 3px 0 0 17px; font-size: 11px; color: #333; }
 .ci .bk .b { display: block; }
 .ci .bk .new { background: #c33; color: #fff; font-style: normal; font-size: 9px; padding: 0 3px; border-radius: 2px; margin-right: 4px; }
-.ci .bk em { color: #888; font-style: normal; margin-left: 5px; }
-.ci .ex { margin: 1px 0 0 17px; font-size: 10.5px; color: #7a5; }
-.ci .sm { margin: 2px 0 0 17px; font-size: 11px; color: #555; }
-.ci .sm::before { content: "メモ: "; color: #999; }
+.ci .bk em { color: #9a9aa0; font-style: normal; margin-left: 5px; }
+.ci .bk .pz { color: #1a7f4b; font-style: normal; font-weight: 600; margin-left: 6px; }
+.ci .bg input::placeholder { color: #b9b9be; }
+.ci .ex { margin: 1px 0 0 17px; font-size: 10.5px; color: #6f9e5c; }
+.ci .sm { margin: 3px 0 0 17px; font-size: 11px; color: #555; }
+.ci .sm::before { content: "メモ "; color: #aaa; }
 
-/* お使いメモ */
-.ci .errand { margin: 3px 0 0 17px; display: flex; align-items: flex-start; gap: 5px; font-size: 11.5px; }
+.ci .errand { margin: 4px 0 0 17px; display: flex; align-items: flex-start; gap: 6px; font-size: 11.5px; }
 .ci .errand .tag {
-  flex: none; background: #2f5d9e; color: #fff; font-size: 9.5px;
-  padding: 1px 5px; border-radius: 3px; margin-top: 1px;
+  flex: none; background: var(--accent); color: #fff; font-size: 9.5px;
+  padding: 1px 6px; border-radius: 4px; margin-top: 1px;
 }
-.ci .errand .body { flex: 1; min-height: 1.4em; white-space: pre-wrap; word-break: break-word; }
-.ci .errand .body[contenteditable] { outline: 0; border-bottom: 1px dashed #bbb; padding: 0 2px 1px; }
-.ci .errand .body[contenteditable]:focus { background: #fffbe6; border-bottom-color: #2f5d9e; }
-.ci .errand .body[contenteditable]:empty::before { content: "クリックして書く"; color: #bbb; }
-/* 罫線は手書き用なので紙のときだけ出す。画面では下線付きの入力欄だけでよい。 */
+.ci .errand .body { flex: 1; min-height: 1.45em; white-space: pre-wrap; word-break: break-word; }
+.ci .errand .body[contenteditable] { outline: 0; border-bottom: 1px dashed #ccc; padding: 0 3px 1px; }
+.ci .errand .body[contenteditable]:focus { background: #fffbe6; border-bottom-color: var(--accent); }
+.ci .errand .body[contenteditable]:empty::before { content: "クリックして書く"; color: #c3c3c8; }
+/* 罫線は手書き用なので紙のときだけ出す */
 .ci .errand .ruled { display: none; }
 
-.leftover { margin-top: 20px; padding: 10px 12px; border: 1px dashed #b08; border-radius: 6px; }
+/* お使いだけの表示では、お使いメモを目立たせる */
+body.errand-mode .ci .errand { font-size: 12.5px; }
+body.errand-mode .ci .errand .body { font-weight: 600; }
+
+.leftover { margin-top: 22px; padding: 12px 14px; border: 1px dashed #c9a; border-radius: 10px; }
 .leftover h2 { font-size: 14px; border: 0; }
 
 @page { size: A4 landscape; margin: 10mm; }
 
 @media print {
   body { padding: 0; }
-  .controls, .note, .progress { display: none; }
-  .top { margin-bottom: 8px; }
-  .map svg { max-height: 112mm; }
-  /* 印刷時は入力欄の枠線を消す。何も書いていない欄は手書き用の罫線に差し替える */
+  .top { position: static; border-bottom: 3px solid var(--ink); padding: 0 0 6px; background: none; backdrop-filter: none; }
+  .seg, button.primary, .bar .spacer, button.ghost, .opts, .hint, .progress { display: none !important; }
+  .bar { padding: 0; margin-bottom: 6px; }
+
+  .ci a.go { color: var(--ink); background: none; }
   .ci .errand .body[contenteditable] { border-bottom: 0; }
   .ci .errand .body[contenteditable]:empty::before { content: ""; }
   .ci .errand:not(.has) .body { display: none; }
@@ -149,14 +224,14 @@ h3 small { font-weight: normal; color: #888; margin-left: auto; }
   }
   .ci .errand:not(.has) .ruled[style*="--lines:0"] { display: none; }
 
-  /* 優先度は選択欄ではなく記号だけにする。未設定は空欄にして手書きで丸を付けられるように */
   .ci .pri select { display: none; }
   .ci .pri::before { content: attr(data-mark); }
 
-  /* 予算は入力欄ではなく数字だけ。未入力は下線を残して手書きできるように */
-  .ci .bg input { border: 0; padding: 0; background: none; -moz-appearance: textfield; appearance: textfield; }
+  .ci .bg input { border: 0; padding: 0; background: none; appearance: textfield; }
   .ci .bg input::-webkit-outer-spin-button,
   .ci .bg input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .ci .bg.blank input { border-bottom: 1px solid #bbb; }
-  .total { display: block; }
+
+  .map svg { max-height: 112mm; }
+  .map { border-radius: 0; }
 }

@@ -130,9 +130,13 @@
         best.set(k, it);
         continue;
       }
+      // 一覧に単独のカードとして出るのは主スペース側だけなので、そちらを残す。
+      // 副スペースの wcid を持っていると、サイトを開いても該当カードに辿り着けない。
       const better =
         (!!it.pos && !cur.pos) ||
-        (!!it.pos === !!cur.pos && String(it.space).localeCompare(String(cur.space)) < 0);
+        (!!it.pos === !!cur.pos && !!it.isMain && !cur.isMain) ||
+        (!!it.pos === !!cur.pos && !!it.isMain === !!cur.isMain &&
+          String(it.space).localeCompare(String(cur.space)) < 0);
       if (better) best.set(k, it);
     }
 
@@ -163,6 +167,7 @@
       favorite: 'あり',
       favoriteColor: it.color,
       booksText: detail.booksText(it),
+      priceTotal: it.priceTotal || '',
       hasNewBook: it.hasNewBook ? '新刊あり' : '',
       tagsText: (it.tags || []).join(' '),
       externalsText: detail.externalsText(it),

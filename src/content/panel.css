@@ -116,6 +116,24 @@
 
 .wch-btn.wch-mini { flex: 0 0 auto; min-width: 48px; }
 
+.wch-btn.wch-quiet { background: transparent; border-color: #45474f; color: #b8bac2; }
+.wch-btn.wch-quiet:hover { background: #2c2e36; color: #e7e7ea; }
+
+.wch-more-toggle {
+  width: 100%;
+  margin-top: 10px;
+  padding: 6px;
+  background: transparent;
+  color: #8d90a0;
+  border: 0;
+  border-top: 1px solid #34363e;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+.wch-more-toggle:hover { color: #e7e7ea; }
+.wch-more { padding-top: 2px; }
+
 .wch-select,
 .wch-input {
   flex: 1 1 90px;

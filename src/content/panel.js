@@ -94,18 +94,34 @@
     refreshCount();
   }
 
+  /**
+   * 出力の前に、お気に入りを取り直して保存データに入れる。
+   * 押すだけで最新が出るようにしたいので、取込ボタンは別に置かない。
+   * ログインが切れている等で取れないときは、手元にあるぶんで出す。
+   */
+  async function freshRows() {
+    try {
+      await dataBuild.syncToStore((m) => status(m));
+    } catch (e) {
+      status(`最新を取れませんでした（${e.message}）。保存済みのぶんで出します`);
+    }
+    return await refreshCount();
+  }
+
   async function doExportCSV() {
-    const rows = await refreshCount();
-    if (!rows.length) return status('保存済みデータがありません');
+    status('お気に入りを読み込んでいます…');
+    const rows = await freshRows();
+    if (!rows.length) return status('出せるデータがありません');
     download(`webcatalog-${stamp()}.csv`, serialize.toCSV(rows), 'text/csv');
-    status(`CSV を出力しました（${rows.length} 件）`);
+    status(`CSV を保存しました（${rows.length} 件）`);
   }
 
   async function doExportJSON() {
-    const rows = await refreshCount();
-    if (!rows.length) return status('保存済みデータがありません');
+    status('お気に入りを読み込んでいます…');
+    const rows = await freshRows();
+    if (!rows.length) return status('出せるデータがありません');
     download(`webcatalog-${stamp()}.json`, serialize.toJSON(rows), 'application/json');
-    status(`JSON を出力しました（${rows.length} 件）`);
+    status(`JSON を保存しました（${rows.length} 件）`);
   }
 
   async function doRouteSheet(onlyFavorite) {
@@ -130,20 +146,6 @@
     runtime.sendMessage({ type: 'open-sheet' }, (res) => {
       status(res?.ok ? '巡回シートを開きました' : `開けませんでした: ${res?.error || '不明'}`);
     });
-  }
-
-  /** API のお気に入り情報（頒布物・書店リンク込み）を保存データに取り込む。 */
-  async function doSync(button) {
-    button.disabled = true;
-    try {
-      const s = await dataBuild.syncToStore((m) => status(m));
-      status(`API から取込：新規 ${s.added} / 更新 ${s.updated} / 合計 ${s.total}`);
-      refreshCount();
-    } catch (e) {
-      status(`失敗: ${e.message}`);
-    } finally {
-      button.disabled = false;
-    }
   }
 
   async function doRouteText() {
@@ -290,9 +292,8 @@
       h('option', { value: 'dry', text: '試行のみ' })
     ]);
 
-    const collectBtn = btn('一覧を最後まで収集', () => doAutoCollect(collectBtn), 'wch-primary');
-    const sheetBtn = btn('配置図つき巡回シートを開く', doSheet, 'wch-primary');
-    const syncBtn = btn('お気に入りを API から取込', () => doSync(syncBtn));
+    const collectBtn = btn('最後まで送って拾う', () => doAutoCollect(collectBtn));
+    const sheetBtn = btn('巡回シートを開く', doSheet, 'wch-primary');
     const addBtn = btn('登録', () => doBulkToggle(scopeSelect, 'add', addBtn, '登録'));
     const removeBtn = btn('解除', () => doBulkToggle(scopeSelect, 'remove', removeBtn, '解除'));
     const colorBtn = btn('色を一括設定', () => doBulkFavoriteColor(scopeSelect, colorSelect, colorBtn));
@@ -302,56 +303,61 @@
     hintEl = h('div', { class: 'wch-hint wch-hidden' });
     statusEl = h('div', { class: 'wch-status', text: '待機中' });
 
-    const body = h('div', { class: 'wch-body' }, [
-      countEl,
+    // 普段は畳んでおく操作一式。開いたときだけ出す。
+    const moreBody = h('div', { class: 'wch-more wch-hidden' }, [
       hintEl,
-
-      h('div', { class: 'wch-section-title', text: '収集' }),
-      h('div', { class: 'wch-row' }, [
-        collectBtn,
-        btn('画面分だけ取込', async () => {
-          const s = await collect.collectVisible();
-          status(`取込：新規 ${s.added} / 更新 ${s.updated}`);
-          refreshCount();
-        })
-      ]),
-
-      h('div', { class: 'wch-section-title', text: '出力' }),
-      h('div', { class: 'wch-row' }, [btn('CSV', doExportCSV), btn('JSON', doExportJSON)]),
-
-      h('div', { class: 'wch-section-title', text: '巡回シート（配置図つき・PDF可）' }),
-      h('div', { class: 'wch-row' }, [sheetBtn]),
-      h('div', { class: 'wch-row' }, [syncBtn]),
-
-      h('div', { class: 'wch-section-title', text: '巡回リスト（収集データから・スペース順）' }),
-      h('div', { class: 'wch-row' }, [
-        btn('お気に入りのみ', () => doRouteSheet(true)),
-        btn('全件', () => doRouteSheet(false)),
-        btn('テキスト', doRouteText)
-      ]),
-
-      h('div', { class: 'wch-section-title', text: '一括操作（画面上のカードが対象）' }),
+      h('div', { class: 'wch-section-title', text: 'お気に入りの一括操作（画面上のカードが対象）' }),
       h('div', { class: 'wch-row' }, [h('span', { class: 'wch-label', text: '対象' }), scopeSelect]),
-      h('div', { class: 'wch-row' }, [
-        h('span', { class: 'wch-label', text: '既定色' }),
-        addBtn,
-        removeBtn
-      ]),
+      h('div', { class: 'wch-row' }, [h('span', { class: 'wch-label', text: '既定色' }), addBtn, removeBtn]),
       h('div', { class: 'wch-row' }, [
         h('span', { class: 'wch-label', text: '色' }),
         colorSelect,
         btn('読込', () => fillColorOptions(colorSelect), 'wch-mini')
       ]),
       h('div', { class: 'wch-row' }, [colorBtn]),
-      h('div', { class: 'wch-row' }, [
-        h('span', { class: 'wch-label', text: 'メモ' }),
-        memoInput,
-        modeSelect
-      ]),
+      h('div', { class: 'wch-row' }, [h('span', { class: 'wch-label', text: 'メモ' }), memoInput, modeSelect]),
       h('div', { class: 'wch-row' }, [memoBtn]),
 
+      h('div', { class: 'wch-section-title', text: 'このページから拾う（API が使えないとき用）' }),
+      h('div', { class: 'wch-row' }, [
+        collectBtn,
+        btn('画面分だけ', async () => {
+          const s = await collect.collectVisible();
+          status(`取込：新規 ${s.added} / 更新 ${s.updated}`);
+          refreshCount();
+        })
+      ]),
+      h('div', { class: 'wch-row' }, [
+        btn('スペース順リスト', () => doRouteSheet(false), 'wch-quiet'),
+        btn('テキスト', doRouteText, 'wch-quiet')
+      ]),
+
       h('div', { class: 'wch-section-title', text: '管理' }),
-      h('div', { class: 'wch-row' }, [btn('保存データを削除', doClear, 'wch-danger-outline')]),
+      h('div', { class: 'wch-row' }, [btn('保存データを削除', doClear, 'wch-danger-outline')])
+    ]);
+
+    const more = h('button', {
+      class: 'wch-more-toggle',
+      type: 'button',
+      text: 'そのほかの操作',
+      onclick: (e) => {
+        const open = moreBody.classList.toggle('wch-hidden') === false;
+        e.target.textContent = open ? 'そのほかの操作を隠す' : 'そのほかの操作';
+      }
+    });
+
+    const body = h('div', { class: 'wch-body' }, [
+      countEl,
+
+      h('div', { class: 'wch-row' }, [sheetBtn]),
+      h('div', { class: 'wch-row' }, [
+        btn('CSV', doExportCSV, 'wch-quiet'),
+        btn('JSON', doExportJSON, 'wch-quiet')
+      ]),
+
+      // ここから下は普段使わないので畳んでおく
+      more,
+      moreBody,
 
       statusEl
     ]);

@@ -6,38 +6,51 @@
   <link rel="stylesheet" href="sheet.css">
 </head>
 <body>
-  <div class="top">
-    <h1>お気に入り巡回シート</h1>
-    <div class="sub" id="sub">読み込み中…</div>
-
-    <div class="total" id="total"></div>
-
-    <div class="controls">
-      <label><input type="checkbox" id="optMap" checked> 配置図</label>
-      <label><input type="checkbox" id="optBooks" checked> 頒布物</label>
-      <label><input type="checkbox" id="optExternals" checked> 書店</label>
-      <label>お使い欄 <input type="number" id="optLines" min="0" max="6" step="1" value="2"> 行</label>
-      <label>絞り込み
-        <select id="optFilter">
-          <option value="0">全部</option>
-          <option value="1">◎ のみ</option>
-          <option value="2">◎○ まで</option>
-          <option value="3">◎○△ まで</option>
-        </select>
-      </label>
-      <button id="reload">取り直す</button>
-      <button id="print" class="primary">PDF で保存 / 印刷</button>
+  <header class="top">
+    <div class="ttl">
+      <h1 id="title">巡回シート</h1>
+      <p class="sub" id="sub">読み込んでいます…</p>
     </div>
+
+    <div class="seg" id="mode" role="tablist">
+      <button data-mode="all" class="on" role="tab">巡回シート</button>
+      <button data-mode="errand" role="tab">お使いだけ</button>
+    </div>
+
+    <button id="print" class="primary">PDF で保存 / 印刷</button>
+  </header>
+
+  <div class="bar">
+    <span class="total" id="total"></span>
+    <span class="spacer"></span>
+    <button id="fillBudget" class="ghost" hidden>頒布物の価格で予算を埋める</button>
+    <button id="optToggle" class="ghost" aria-expanded="false">表示を調整</button>
+    <button id="reload" class="ghost">取り直す</button>
   </div>
 
-  <div class="note" id="note">
-    優先度（◎ 高 / ○ 中 / △ 低）・予算・お使いメモは、この画面で直接書き換えられます。
-    書いた内容はこの拡張機能の中に保存され、サイト側のお気に入りメモには影響しません。
-    予算はサークルごとの見込み額で、頒布物の価格はサイトが公開していないため自分で入れる形です。
-    お使いメモを空のままにすると、紙に手書きできるよう罫線が入ります。
+  <section class="opts" id="opts" hidden>
+    <label><input type="checkbox" id="optMap" checked> 配置図</label>
+    <label><input type="checkbox" id="optBooks" checked> 頒布物</label>
+    <label><input type="checkbox" id="optExternals" checked> 書店</label>
+    <label>優先度
+      <select id="optFilter">
+        <option value="0">すべて</option>
+        <option value="1">◎ のみ</option>
+        <option value="2">◎ ○ まで</option>
+        <option value="3">◎ ○ △ まで</option>
+      </select>
+    </label>
+    <label>お使い欄 <input type="number" id="optLines" min="0" max="6" step="1" value="2"> 行</label>
+  </section>
+
+  <div class="hint" id="hint">
+    <b>◎ ○ △ の優先度・予算・お使いメモは、この画面でそのまま書き込めます。</b>
+    書いた内容はこの拡張機能の中だけに残り、サイトのメモは書き換えません。
+    スペースとサークル名を押すと、サイトのそのサークルのところが開きます。
+    <button class="x" id="hintClose" title="閉じる">×</button>
   </div>
 
-  <div id="progress" class="progress">準備中…</div>
+  <div id="progress" class="progress"><span class="spin"></span><span id="progressText">準備中…</span></div>
   <div id="content"></div>
 
   <script src="../lib/space.js"></script>

@@ -47,7 +47,13 @@
     return host || `service${id}`;
   }
 
-  /** 頒布物（お品書き）。セット商品も個別本も同じ配列に入っている。 */
+  /**
+   * 頒布物（お品書き）。セット商品も個別本も同じ配列に入っている。
+   *
+   * 価格は price に入っている。ただし priceDisplay が「サークルが価格を出すかどうか」の
+   * 指定で、これが false のものは値段があっても伏せている。実データ 13,838 件のうち
+   * price あり 11,199、priceDisplay=true 9,004。伏せているぶんは表示にも合計にも使わない。
+   */
   function books(circle) {
     return (circle.publishingBookInfos || [])
       .slice()
@@ -59,9 +65,20 @@
         pages: b.page ?? null,
         isNew: !!b.isNew,
         r18: !!(b.coverImage && b.coverImage.r18),
+        price: typeof b.price === 'number' ? b.price : null,
+        priceShown: !!b.priceDisplay,
+        publicationDate: b.publicationDate || '',
         description: b.description || '',
         tags: b.tags || []
       }));
+  }
+
+  /** 価格を出しているぶんの合計。予算の目安に使う。 */
+  function priceTotal(bookList) {
+    return (bookList || []).reduce(
+      (a, b) => a + (b.priceShown && typeof b.price === 'number' ? b.price : 0),
+      0
+    );
   }
 
   /** 書店・pixiv などの外部の新着。 */
@@ -110,6 +127,7 @@
       rankingScore: circle.rankingScore ?? null,
       lastUpdateAt: circle.lastUpdateAt || '',
       books: bs,
+      priceTotal: priceTotal(bs),
       hasNewBook: bs.some((b) => b.isNew),
       tags: [...new Set(bs.flatMap((b) => b.tags))],
       externals: ex,
@@ -135,6 +153,7 @@
       .map((b) => {
         const bits = [b.name];
         if (b.size || b.pages) bits.push(`${b.size || ''}${b.pages ? `${b.pages}p` : ''}`.trim());
+        if (b.priceShown && b.price != null) bits.push(`${b.price}円`);
         if (b.isNew) bits.push('新刊');
         return bits.filter(Boolean).join(' ');
       })
@@ -150,6 +169,7 @@
     SERVICES,
     abs,
     books,
+    priceTotal,
     externals,
     cutUrls,
     normalize,

@@ -67,7 +67,50 @@
       : group.islands.map((i) => `${i.pos.x * sw},${i.pos.y * sh}`).join(' ');
     const line = pts ? `<polyline class="route" points="${pts}"/>` : '';
 
-    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img">
+    // 見る必要があるのはお気に入りと経路の周りだけなので、そこに寄せる。
+    // 数件しか無いときにホール全体を出すと、ほとんど余白になって読めない。
+    const box = (() => {
+      let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+      const add = (px, py) => {
+        if (px < x1) x1 = px;
+        if (py < y1) y1 = py;
+        if (px > x2) x2 = px;
+        if (py > y2) y2 = py;
+      };
+      for (const island of group.islands) {
+        for (const it of island.items) {
+          const r = it.geo?.space || it.geo?.cut;
+          if (!r) continue;
+          add(r[0] * sw, r[1] * sh);
+          add(r[2] * sw, r[3] * sh);
+        }
+      }
+      for (const [x, y] of group.route || []) add((x + 0.5) * sw, (y + 0.5) * sh);
+      if (!Number.isFinite(x1)) return { x: 0, y: 0, w: W, h: H };
+
+      const pad = sw * 6;
+      x1 = Math.max(0, x1 - pad);
+      y1 = Math.max(0, y1 - pad);
+      x2 = Math.min(W, x2 + pad);
+      y2 = Math.min(H, y2 + pad);
+
+      // 縦横比が極端になると読みにくいので、短い辺を広げて整える
+      let w = x2 - x1;
+      let h = y2 - y1;
+      const ratio = W / H;
+      if (w / h > ratio) {
+        const nh = Math.min(H, w / ratio);
+        y1 = Math.max(0, Math.min(H - nh, y1 - (nh - h) / 2));
+        h = nh;
+      } else {
+        const nw = Math.min(W, h * ratio);
+        x1 = Math.max(0, Math.min(W - nw, x1 - (nw - w) / 2));
+        w = nw;
+      }
+      return { x: x1, y: y1, w, h };
+    })();
+
+    return `<svg viewBox="${box.x} ${box.y} ${box.w} ${box.h}" preserveAspectRatio="xMidYMid meet" role="img">
   <rect class="paper" x="0" y="0" width="${W}" height="${H}"/>
   <g>${bg}</g>${line}<g>${marks.join('')}</g><g>${badges.join('')}</g>
 </svg>`;
@@ -92,6 +135,26 @@
   const yen = (n) => '¥' + Number(n || 0).toLocaleString('ja-JP');
 
   /**
+   * サイト側でそのサークルを開く URL。
+   *
+   * サイトには詳細だけの画面もモーダルも無く、一覧のカードが表示モードに応じて
+   * 展開される作りになっている。目的のサークルのところで一覧を開くのが実質の詳細表示。
+   *
+   * wcid だけを付けても効かない。wcid は一覧を絞る条件ではなく「そこへスクロールする」
+   * 指定でしかないため、一覧の1ページ目(100件)に入っていないサークルには届かない。
+   * サークル名・日・ブロックで先に絞ってからスクロールさせる必要がある。
+   * 実際に3件で試したところ、この形なら候補が 1〜6 件まで絞れて確実に画面に出た。
+   */
+  function siteUrl(it) {
+    const p = new URLSearchParams();
+    if (it.name) p.set('keyword', it.name);
+    if (it.day) p.set('day', String(it.day));
+    if (it.block) p.set('block', it.block);
+    p.set('wcid', String(it.wcid));
+    return `https://webcatalog.circle.ms/circle/list?${p.toString()}`;
+  }
+
+  /**
    * 優先度。画面では選べるようにし、紙では記号だけ出す。
    * 記号は 高=◎ 中=○ 低=△、未設定は空欄（手書きで丸を付けられる）。
    */
@@ -108,14 +171,19 @@
     );
   }
 
-  /** 予算。頒布物の価格はサイトが公開していないので自分で入れる。 */
+  /**
+   * 予算。自分で入れる欄だが、頒布物の価格が公開されていればそれを目安として置いておく
+   * （プレースホルダに出すだけで、押して入れるまでは合計に入れない）。
+   */
   function budgetField(it, opts) {
     const v = it.budget || 0;
+    const hint = it.priceTotal > 0 ? String(it.priceTotal) : '';
     if (!opts.editable) return v ? `<span class="bg">${yen(v)}</span>` : '<span class="bg blank"></span>';
     return (
       `<span class="bg${v ? '' : ' blank'}">` +
       `<input class="bg-in" type="number" min="0" step="100" inputmode="numeric" ` +
-      `value="${v || ''}" placeholder="¥" data-wcid="${esc(it.wcid)}"></span>`
+      `value="${v || ''}" placeholder="${esc(hint || '¥')}" ` +
+      `data-suggest="${it.priceTotal || 0}" data-wcid="${esc(it.wcid)}"></span>`
     );
   }
 
@@ -126,7 +194,8 @@
             .map(
               (b) =>
                 `<span class="b">${b.isNew ? '<i class="new">新</i>' : ''}${esc(b.name)}` +
-                `${b.size || b.pages ? `<em>${esc(b.size || '')}${b.pages ? `${b.pages}p` : ''}</em>` : ''}</span>`
+                `${b.size || b.pages ? `<em>${esc(b.size || '')}${b.pages ? `${b.pages}p` : ''}</em>` : ''}` +
+                `${b.priceShown && b.price != null ? `<i class="pz">${yen(b.price)}</i>` : ''}</span>`
             )
             .join('')}</div>`
         : '';
@@ -143,8 +212,8 @@
         <span class="chk"></span>
         <span class="sw" style="background:${colorOf(it)}"></span>
         ${priorityField(it, opts)}
-        <span class="sp">${esc(it.block)}${esc(it.space)}</span>
-        <span class="nm">${esc(it.name || '')}</span>
+        <a class="go" href="${esc(siteUrl(it))}" data-site-link
+           title="サイトでこのサークルを開く"><span class="sp">${esc(it.block)}${esc(it.space)}</span><span class="nm">${esc(it.name || '')}</span></a>
         ${it.writer ? `<span class="wr">${esc(it.writer)}</span>` : ''}
         ${it.hasNewBook ? '<span class="newbadge">新刊</span>' : ''}
         ${budgetField(it, opts)}
@@ -232,6 +301,7 @@
     renderGroup,
     renderItem,
     summarize,
-    summaryText
+    summaryText,
+    siteUrl
   };
 })(window);

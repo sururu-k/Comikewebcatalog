@@ -21,6 +21,7 @@
     { key: 'priority', label: '優先度' },
     { key: 'budget', label: '予算' },
     { key: 'errand', label: 'お使いメモ' },
+    { key: 'priceTotal', label: '頒布物の価格合計' },
     { key: 'booksText', label: '頒布物' },
     { key: 'hasNewBook', label: '新刊' },
     { key: 'tagsText', label: 'タグ' },
