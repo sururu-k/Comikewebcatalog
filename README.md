@@ -1,3 +1,4 @@
+注意！このレポジトリは　Ai slopの可能性が有ります。
 # WebCatalog Helper
 
 [webcatalog.circle.ms](https://webcatalog.circle.ms/circle/list) のサークル一覧を扱いやすくする Chrome / Firefox 拡張。
