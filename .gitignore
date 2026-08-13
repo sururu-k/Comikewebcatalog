@@ -1,0 +1,11 @@
+# 検証用の一時物。セッションクッキーや取得したカタログデータが混ざるので絶対に入れない。
+*.pem
+cookies.json
+cookies.sqlite*
+profile*/
+api/
+chunks/
+*.pdf
+*.png
+!icons/*.png
+node_modules/

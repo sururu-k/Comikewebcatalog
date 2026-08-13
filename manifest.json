@@ -1,0 +1,69 @@
+{
+  "manifest_version": 3,
+  "name": "WebCatalog Helper",
+  "version": "0.1.0",
+  "description": "webcatalog.circle.ms のサークル一覧を収集して CSV/JSON 出力、お気に入りの一括操作、スペース順の巡回リスト作成を行う補助拡張。",
+
+  "permissions": ["storage", "downloads"],
+  "host_permissions": ["https://webcatalog.circle.ms/*"],
+
+  "background": {
+    "service_worker": "src/background/background.js",
+    "scripts": ["src/background/background.js"]
+  },
+
+  "action": {
+    "default_title": "WebCatalog Helper",
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["https://webcatalog.circle.ms/*"],
+      "js": ["src/inject/net-hook.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://webcatalog.circle.ms/*"],
+      "js": [
+        "src/lib/space.js",
+        "src/lib/csv.js",
+        "src/lib/store.js",
+        "src/lib/api.js",
+        "src/lib/plan.js",
+        "src/content/selectors.js",
+        "src/content/scrape.js",
+        "src/content/collect.js",
+        "src/content/bulk.js",
+        "src/content/route.js",
+        "src/content/sheet.js",
+        "src/content/favorites.js",
+        "src/content/panel.js",
+        "src/content/content.js"
+      ],
+      "css": ["src/content/panel.css"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "webcatalog-helper@shieru.local",
+      "strict_min_version": "128.0"
+    }
+  }
+}

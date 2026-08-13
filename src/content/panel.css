@@ -1,0 +1,143 @@
+/* ページ側の Vuetify テーマに巻き込まれないよう、値は全部ここで固定する。 */
+
+.wch-panel {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483000;
+  width: 320px;
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  background: #1e1f24;
+  color: #e7e7ea;
+  border: 1px solid #3a3c44;
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  font: 13px/1.5 "Yu Gothic UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wch-panel.wch-hidden { display: none; }
+.wch-panel.wch-folded .wch-body { display: none; }
+
+.wch-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #26272e;
+  border-bottom: 1px solid #3a3c44;
+  border-radius: 10px 10px 0 0;
+  position: sticky;
+  top: 0;
+}
+
+.wch-title { font-weight: 600; letter-spacing: .02em; }
+
+.wch-fold {
+  width: 22px;
+  height: 22px;
+  line-height: 1;
+  background: transparent;
+  color: #b8bac2;
+  border: 1px solid #4a4c55;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.wch-fold:hover { background: #33353d; color: #fff; }
+
+.wch-body { padding: 10px 12px 12px; }
+
+.wch-count {
+  font-size: 12px;
+  color: #9fa2ad;
+  padding: 2px 0 6px;
+}
+
+.wch-hint {
+  margin: 2px 0 6px;
+  padding: 6px 8px;
+  background: #2c2418;
+  border: 1px solid #5a4726;
+  border-radius: 6px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #e0c08a;
+}
+
+.wch-section-title {
+  margin: 10px 0 5px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  color: #8d90a0;
+  border-bottom: 1px solid #34363e;
+  padding-bottom: 3px;
+}
+
+.wch-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.wch-label {
+  font-size: 12px;
+  color: #9fa2ad;
+  min-width: 30px;
+}
+
+.wch-btn {
+  flex: 1 1 auto;
+  min-height: 30px;
+  padding: 4px 10px;
+  background: #32343d;
+  color: #e7e7ea;
+  border: 1px solid #464954;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  white-space: nowrap;
+}
+.wch-btn:hover { background: #3c3f4a; }
+.wch-btn:active { transform: translateY(1px); }
+
+.wch-btn.wch-primary { background: #2f5d9e; border-color: #3d72bd; }
+.wch-btn.wch-primary:hover { background: #3a6cb4; }
+
+.wch-btn.wch-danger { background: #9e3535; border-color: #bd4343; }
+.wch-btn.wch-danger:hover { background: #b44040; }
+
+.wch-btn.wch-danger-outline { background: transparent; border-color: #7a3a3a; color: #e4a2a2; }
+.wch-btn.wch-danger-outline:hover { background: #3a2626; }
+
+.wch-btn.wch-mini { flex: 0 0 auto; min-width: 48px; }
+
+.wch-select,
+.wch-input {
+  flex: 1 1 90px;
+  min-height: 30px;
+  padding: 4px 6px;
+  background: #2a2c34;
+  color: #e7e7ea;
+  border: 1px solid #464954;
+  border-radius: 6px;
+  font: inherit;
+}
+
+.wch-input::placeholder { color: #747782; }
+
+.wch-status {
+  margin-top: 10px;
+  padding: 6px 8px;
+  background: #23252c;
+  border: 1px solid #34363e;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #b9bcc6;
+  min-height: 18px;
+  word-break: break-all;
+}
