@@ -214,15 +214,6 @@
     recalcTotals();
   }
 
-  // サークル名を押したら、サイトのそのサークルのところを開く。
-  // タブが増え続けないよう、開く先は背景側で1枚に固定している。
-  $('content').addEventListener('click', (e) => {
-    const a = e.target.closest('a[data-site-link]');
-    if (!a) return;
-    e.preventDefault();
-    runtime.sendMessage({ type: 'open-site', url: a.href, wcid: a.dataset.wcid });
-  });
-
   window.addEventListener('beforeunload', flush);
   window.addEventListener('beforeprint', flush);
 

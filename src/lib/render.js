@@ -53,10 +53,12 @@
         marks.push(rect(it.geo, `class="halo" stroke="${colorOf(it)}"`, sw * 0.9));
         marks.push(rect(it.geo, `fill="${colorOf(it)}" stroke="#111" stroke-width="1.5"`));
       }
-      const p = island.pos;
+      // 番号は経路が実際に来る場所（島の入口）に置く。無ければ重心で代用。
+      const bx = island.badge ? (island.badge[0] + 0.5) * sw : island.pos.x * sw;
+      const by = island.badge ? (island.badge[1] + 0.5) * sh : island.pos.y * sh;
       badges.push(
-        `<g class="badge"><circle cx="${p.x * sw}" cy="${p.y * sh}" r="${sh * 0.95}"/>` +
-          `<text x="${p.x * sw}" y="${p.y * sh}">${n}</text></g>`
+        `<g class="badge"><circle cx="${bx}" cy="${by}" r="${sh * 0.95}"/>` +
+          `<text x="${bx}" y="${by}">${n}</text></g>`
       );
     }
 
@@ -86,6 +88,9 @@
         }
       }
       for (const [x, y] of group.route || []) add((x + 0.5) * sw, (y + 0.5) * sh);
+      for (const island of group.islands) {
+        if (island.badge) add((island.badge[0] + 0.5) * sw, (island.badge[1] + 0.5) * sh);
+      }
       if (!Number.isFinite(x1)) return { x: 0, y: 0, w: W, h: H };
 
       const pad = sw * 6;
@@ -135,23 +140,15 @@
   const yen = (n) => '¥' + Number(n || 0).toLocaleString('ja-JP');
 
   /**
-   * サイト側でそのサークルを開く URL。
+   * そのサークルの詳細ページ。
    *
-   * サイトには詳細だけの画面もモーダルも無く、一覧のカードが表示モードに応じて
-   * 展開される作りになっている。目的のサークルのところで一覧を開くのが実質の詳細表示。
-   *
-   * wcid だけを付けても効かない。wcid は一覧を絞る条件ではなく「そこへスクロールする」
-   * 指定でしかないため、一覧の1ページ目(100件)に入っていないサークルには届かない。
-   * サークル名・日・ブロックで先に絞ってからスクロールさせる必要がある。
-   * 実際に3件で試したところ、この形なら候補が 1〜6 件まで絞れて確実に画面に出た。
+   * 新しい方のサイトは SPA で、詳細は一覧のカードを押すと出るドロワー。開いても
+   * URL が変わらないので、リンクにはできない。一方 旧版(classic) にはサークル1件の
+   * 実ページがあり、`/Circle/<wcid>` でそのまま開ける（title もサークル名になる）。
+   * リンクとして貼れるならそのほうが素直なので、こちらを使う。
    */
   function siteUrl(it) {
-    const p = new URLSearchParams();
-    if (it.name) p.set('keyword', it.name);
-    if (it.day) p.set('day', String(it.day));
-    if (it.block) p.set('block', it.block);
-    p.set('wcid', String(it.wcid));
-    return `https://webcatalog.circle.ms/circle/list?${p.toString()}`;
+    return `https://classic-webcatalog.circle.ms/Circle/${encodeURIComponent(it.wcid)}`;
   }
 
   /**
@@ -212,8 +209,8 @@
         <span class="chk"></span>
         <span class="sw" style="background:${colorOf(it)}"></span>
         ${priorityField(it, opts)}
-        <a class="go" href="${esc(siteUrl(it))}" data-site-link data-wcid="${esc(it.wcid)}"
-           title="サイトでこのサークルの詳細を開く"><span class="sp">${esc(it.block)}${esc(it.space)}</span><span class="nm">${esc(it.name || '')}</span></a>
+        <a class="go" href="${esc(siteUrl(it))}" target="_blank" rel="noopener"
+           title="このサークルの詳細ページを開く"><span class="sp">${esc(it.block)}${esc(it.space)}</span><span class="nm">${esc(it.name || '')}</span></a>
         ${it.writer ? `<span class="wr">${esc(it.writer)}</span>` : ''}
         ${it.hasNewBook ? '<span class="newbadge">新刊</span>' : ''}
         ${budgetField(it, opts)}

@@ -304,24 +304,56 @@
 
       const order = orderIdx.map((i) => islands[i]);
 
-      // 実際に歩く線を、通路のマスを辿って作る
-      const cells = [];
-      let fromIdx = -1;
-      for (const i of orderIdx) {
-        const field = fromIdx === -1 ? startField : fields[fromIdx];
-        const seg = gridLib.pathTo(grid, field.prev, islands[i].cell);
-        if (seg.length) cells.push(...(cells.length ? seg.slice(1) : seg));
-        fromIdx = i;
-      }
-      const route = gridLib.simplify(cells);
-
+      // 島の中の並びを、入ってきた側に近い端からにする
       let cursor = startPos;
       for (const island of order) {
         island.items = orientIsland(island, cursor);
         cursor = island.items[island.items.length - 1].pos;
       }
 
-      const length = gridLib.toSpaces(cost);
+      // 各サークルの前に立つマスを出す。経路はここを順に通る。
+      for (const island of order) {
+        island.stops = island.items
+          .map((it) => gridLib.accessCell(grid, it.geo?.space || it.geo?.cut, it.pos))
+          .filter(Boolean);
+        if (!island.stops.length && island.cell) island.stops = [island.cell];
+        // バッジは経路が実際に来る場所（島の入口）に置く。
+        // 島の重心に置くと、机の上に番号が乗って線と離れて見える。
+        island.badge = island.stops[0] || island.cell;
+      }
+
+      // 実際に歩く線をつなぐ。
+      // 同じブロックでも列をまたいで離れていることがあるので、島の中も含めて
+      // すべての区間を通路探索でつなぐ。直線で結ぶと机を突っ切ってしまう。
+      const stops = order.flatMap((island) => island.stops);
+      const cells = [];
+      let walked = 0;
+      let fromCell = startCell;
+
+      const fieldCache = new Map();
+      const fieldFrom = (cell) => {
+        const k = `${cell[0]},${cell[1]}`;
+        if (!fieldCache.has(k)) fieldCache.set(k, gridLib.distances(grid, cell));
+        return fieldCache.get(k);
+      };
+
+      for (const to of stops) {
+        if (!fromCell) {
+          fromCell = to;
+          continue;
+        }
+        const field = fieldFrom(fromCell);
+        const c = field.dist[to[1] * grid.W + to[0]];
+        const seg = c >= 0 ? gridLib.pathTo(grid, field.prev, to) : [];
+        if (c > 0) walked += c;
+        if (seg.length) cells.push(...(cells.length ? seg.slice(1) : seg));
+        else cells.push(to); // 万一つながらないときも線は切らない
+        fromCell = to;
+      }
+
+      const route = gridLib.simplify(cells);
+
+      const length = gridLib.toSpaces(walked || cost);
       const naiveLength = gridLib.toSpaces(naiveCost);
 
       out.push({
