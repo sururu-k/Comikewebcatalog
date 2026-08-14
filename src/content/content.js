@@ -28,6 +28,9 @@
     if (settings.autoCollect) collect.startObserver();
 
     panel.ensure();
+
+    // シートから飛んできた場合は、そのサークルの詳細まで開く
+    root.WCH.openDetail.run();
   }
 
   /** 一覧が描画されるのを待ってから起動する。 */

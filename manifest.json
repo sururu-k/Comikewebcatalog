@@ -53,6 +53,7 @@
         "src/content/collect.js",
         "src/content/bulk.js",
         "src/content/route.js",
+        "src/content/opendetail.js",
         "src/content/panel.js",
         "src/content/content.js"
       ],

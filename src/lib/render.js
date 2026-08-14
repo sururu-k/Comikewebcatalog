@@ -212,8 +212,8 @@
         <span class="chk"></span>
         <span class="sw" style="background:${colorOf(it)}"></span>
         ${priorityField(it, opts)}
-        <a class="go" href="${esc(siteUrl(it))}" data-site-link
-           title="サイトでこのサークルを開く"><span class="sp">${esc(it.block)}${esc(it.space)}</span><span class="nm">${esc(it.name || '')}</span></a>
+        <a class="go" href="${esc(siteUrl(it))}" data-site-link data-wcid="${esc(it.wcid)}"
+           title="サイトでこのサークルの詳細を開く"><span class="sp">${esc(it.block)}${esc(it.space)}</span><span class="nm">${esc(it.name || '')}</span></a>
         ${it.writer ? `<span class="wr">${esc(it.writer)}</span>` : ''}
         ${it.hasNewBook ? '<span class="newbadge">新刊</span>' : ''}
         ${budgetField(it, opts)}
@@ -250,14 +250,16 @@
 
   function renderGroup(group, allGeo, size, opts) {
     const s = group.stats;
-    const saved = s.savedRatio > 0.005 ? `（ブロック名順より ${Math.round(s.savedRatio * 100)}% 短い）` : '';
+    // 人混みの中を歩く速さを 時速 3km と置いた目安。買うのに並ぶ時間は含めない。
+    const minutes = Math.max(1, Math.round(s.meters / (3000 / 60)));
     const note = s.walkable === false ? '<span class="warn">通路データ無し・直線概算</span>' : '';
     const items = group.islands.flatMap((i) => i.items);
     const sum = summarize(items);
     return `<article class="area" data-key="${esc(group.day)}|${esc(group.area)}">
       <header>
         <h2>${esc(group.day)}日目 ${esc(group.areaName)}</h2>
-        <div class="meta">${s.circles} サークル / ${s.islands} 島 ・ 歩く距離 約 ${Math.round(s.meters)} m ${saved} ${note}</div>
+        <div class="meta">${s.circles} サークル / ${s.islands} 島 ・ 歩く距離 約 ${Math.round(s.meters)} m
+          <span class="mins" title="人混みを時速3kmで歩いた場合の目安。並ぶ時間は含みません">（歩くだけで約 ${minutes} 分）</span> ${note}</div>
         <div class="sum" data-sum>${summaryText(sum)}</div>
       </header>
       ${opts.showMap ? `<div class="map">${renderMap(group, allGeo, size)}</div>` : ''}

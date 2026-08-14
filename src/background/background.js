@@ -12,8 +12,14 @@
 
   // シートから開いたサイトのタブ。閉じられていたら作り直す。
   let siteTabId = null;
+
+  // タブごとに「開いたら詳細を出してほしいサークル」を預かる。
+  // SPA が自分でURLを書き換えるため、URL に目印を載せる方法は使えない。
+  const pendingDetail = new Map();
+
   api.tabs.onRemoved.addListener((id) => {
     if (id === siteTabId) siteTabId = null;
+    pendingDetail.delete(id);
   });
 
   api.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
@@ -38,9 +44,15 @@
     // シートからサークルを開くとき。次々に押してもタブが増えないよう、
     // 1枚だけ持っておいて使い回す。
     if (msg?.type === 'open-site' && msg.url) {
+      const remember = (tabId) => {
+        siteTabId = tabId ?? null;
+        // 詳細は URL では開けない。開いた先のコンテンツスクリプトが取りに来るので預けておく。
+        if (tabId != null && msg.wcid) pendingDetail.set(tabId, String(msg.wcid));
+      };
+
       const open = () =>
         api.tabs.create({ url: msg.url }, (tab) => {
-          siteTabId = tab?.id ?? null;
+          remember(tab?.id);
           sendResponse({ ok: true, tabId: siteTabId, reused: false });
         });
 
@@ -52,10 +64,20 @@
             siteTabId = null;
             open();
           } else {
+            remember(siteTabId);
             sendResponse({ ok: true, tabId: siteTabId, reused: true });
           }
         });
       }
+      return true;
+    }
+
+    // 開いた先のページから「自分に用があるか」を聞かれたときに渡す。一度きり。
+    if (msg?.type === 'take-pending-detail') {
+      const tabId = _sender?.tab?.id;
+      const wcid = tabId != null ? pendingDetail.get(tabId) : undefined;
+      if (tabId != null) pendingDetail.delete(tabId);
+      sendResponse({ ok: true, wcid: wcid || null });
       return true;
     }
 

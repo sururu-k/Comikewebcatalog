@@ -220,7 +220,7 @@
     const a = e.target.closest('a[data-site-link]');
     if (!a) return;
     e.preventDefault();
-    runtime.sendMessage({ type: 'open-site', url: a.href });
+    runtime.sendMessage({ type: 'open-site', url: a.href, wcid: a.dataset.wcid });
   });
 
   window.addEventListener('beforeunload', flush);
