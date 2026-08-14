@@ -10,7 +10,7 @@
 (function (root) {
   'use strict';
 
-  const { store, api, build, plan, render } = root.WCH;
+  const { store, api, build, plan, render, maptiles } = root.WCH;
   const runtime = (root.browser?.runtime ? root.browser : root.chrome).runtime;
   const $ = (id) => document.getElementById(id);
 
@@ -47,6 +47,7 @@
       showMap: $('optMap').checked,
       showBooks: $('optBooks').checked,
       showExternals: $('optExternals').checked,
+      officialMap: $('optOfficial').checked,
       errandLines: Number($('optLines').value) || 0,
       editable: true
     };
@@ -90,6 +91,12 @@
       state.groups, state.geoByArea, state.sizeByArea, state.leftovers, options()
     );
     bindInputs();
+
+    // 公式の地図タイルは重いので、描いたあとに後追いで貼る。
+    // 取れなくても自前で描いた図がそのまま残るだけなので、失敗しても止めない。
+    if ($('optOfficial').checked) {
+      maptiles.hydrate(el, build.cache.lastModified).catch(() => {});
+    }
   }
 
   function updateHeader(rows) {
@@ -257,7 +264,7 @@
     });
   }
 
-  for (const id of ['optMap', 'optBooks', 'optExternals']) {
+  for (const id of ['optMap', 'optBooks', 'optExternals', 'optOfficial']) {
     $(id).addEventListener('change', () => state.items.length && draw());
   }
   $('optFilter').addEventListener('change', () => state.items.length && rebuild());

@@ -9,4 +9,5 @@ chunks/
 *.png
 !icons/*.png
 !docs/images/*.png
+!docs/images/*.jpg
 node_modules/

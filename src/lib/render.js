@@ -24,7 +24,7 @@
 
   // --- 配置図 ------------------------------------------------------------
 
-  function renderMap(group, allGeo, size) {
+  function renderMap(group, allGeo, size, opts = {}) {
     const sw = size?.SpaceWidth || 14;
     const sh = size?.SpaceHeight || 20;
     const W = size?.BigmapWidth || 3276;
@@ -67,7 +67,10 @@
     const pts = group.route && group.route.length
       ? group.route.map(([x, y]) => `${(x + 0.5) * sw},${(y + 0.5) * sh}`).join(' ')
       : group.islands.map((i) => `${i.pos.x * sw},${i.pos.y * sh}`).join(' ');
-    const line = pts ? `<polyline class="route" points="${pts}"/>` : '';
+    // 公式の地図は色が多いので、経路の下に白い縁を敷いて見失わないようにする
+    const line = pts
+      ? `<polyline class="route-casing" points="${pts}"/><polyline class="route" points="${pts}"/>`
+      : '';
 
     // 見る必要があるのはお気に入りと経路の周りだけなので、そこに寄せる。
     // 数件しか無いときにホール全体を出すと、ほとんど余白になって読めない。
@@ -115,9 +118,17 @@
       return { x: x1, y: y1, w, h };
     })();
 
+    // 下敷きは、あとから公式の地図タイルで差し替える（maptiles.hydrate）。
+    // 差し替えられなかったときは、その下の灰色の矩形がそのまま見える。
+    const base = opts.officialMap
+      ? `<image class="basemap" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"
+          preserveAspectRatio="none" data-area="${esc(group.area)}" data-day="${esc(group.day)}"
+          data-bx="${box.x}" data-by="${box.y}" data-bw="${box.w}" data-bh="${box.h}"/>`
+      : '';
+
     return `<svg viewBox="${box.x} ${box.y} ${box.w} ${box.h}" preserveAspectRatio="xMidYMid meet" role="img">
   <rect class="paper" x="0" y="0" width="${W}" height="${H}"/>
-  <g>${bg}</g>${line}<g>${marks.join('')}</g><g>${badges.join('')}</g>
+  <g>${bg}</g>${base}${line}<g>${marks.join('')}</g><g>${badges.join('')}</g>
 </svg>`;
   }
 
@@ -259,7 +270,7 @@
           <span class="mins" title="人混みを時速3kmで歩いた場合の目安。並ぶ時間は含みません">（歩くだけで約 ${minutes} 分）</span> ${note}</div>
         <div class="sum" data-sum>${summaryText(sum)}</div>
       </header>
-      ${opts.showMap ? `<div class="map">${renderMap(group, allGeo, size)}</div>` : ''}
+      ${opts.showMap ? `<div class="map">${renderMap(group, allGeo, size, opts)}</div>` : ''}
       <div class="islands">${group.islands.map((i, n) => renderIsland(i, n, opts)).join('')}</div>
     </article>`;
   }
@@ -276,6 +287,7 @@
       showMap: true,
       showBooks: true,
       showExternals: true,
+      officialMap: true,
       editable: false,
       errandLines: 2,
       ...opts

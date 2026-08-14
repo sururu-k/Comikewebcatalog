@@ -128,7 +128,10 @@ h2 { font-size: 17px; margin: 0; letter-spacing: -.01em; }
 .paper { fill: #fff; }
 .sp { fill: #e4e4e8; stroke: #fff; stroke-width: .5; }
 .halo { fill: none; stroke-width: 3; opacity: .55; }
-.route { fill: none; stroke: var(--accent); stroke-width: 5; stroke-dasharray: 14 10; stroke-linejoin: round; opacity: .85; }
+.route-casing { fill: none; stroke: #fff; stroke-width: 11; stroke-linejoin: round; opacity: .8; }
+.route { fill: none; stroke: var(--accent); stroke-width: 5; stroke-dasharray: 14 10; stroke-linejoin: round; opacity: .95; }
+/* 公式の地図を敷いたときは、自前の白背景を透かして地図を見せる */
+svg.has-basemap .paper { fill: none; }
 .badge circle { fill: var(--accent); }
 .badge text { fill: #fff; font-size: 22px; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
 
