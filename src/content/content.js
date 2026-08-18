@@ -14,16 +14,15 @@
     if (booted) return;
     booted = true;
 
-    collect.startNetListener();
-
     const settings = await store.loadSettings();
 
-    // イベント ID はサイトの Nuxt config にしか無い。拡張のシートページからも
-    // API を叩けるよう、見えたときに控えておく。
-    const id = root.__NUXT__?.config?.public?.eventId;
-    if (id && String(id) !== String(settings.eventId)) {
-      await store.saveSettings({ eventId: String(id) });
-    }
+    // イベント ID はページ本体の window にしか無い。ここは隔離ワールドなので
+    // 直接は読めず、MAIN world の net-hook から送られてくるのを collect が拾う。
+    // 起動時はひとまず前回の値で動かす。
+    root.WCH.api.setEventId(settings.eventId);
+
+    // 通信を覗いている MAIN world 側に、いまのイベント ID を聞く
+    root.postMessage({ __wch: 'wch-ask-config' }, location.origin);
 
     if (settings.autoCollect) collect.startObserver();
 
@@ -89,6 +88,10 @@
     })();
     return true; // 非同期応答
   });
+
+  // 受け口はページを開いた直後に用意する。カードが出るのを待ってからだと、
+  // イベント ID を載せた通信はとっくに終わっていて取りこぼす。
+  collect.startNetListener();
 
   waitForList();
 })(window);

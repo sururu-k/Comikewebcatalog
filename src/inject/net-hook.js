@@ -25,33 +25,34 @@
   }
 
   /**
-   * イベント ID は Nuxt がページの window に埋めているだけで、
-   * コンテンツスクリプト側（隔離ワールド）からは見えない。
-   * 拡張のシートページからも API を叩けるよう、こちらから渡す。
+   * イベント ID を拡張側に渡す。
+   *
+   * ページの window.__NUXT__ から拾おうとしたが、Nuxt はハイドレーションが済むと
+   * これを消してしまい、コンテンツスクリプトが起きた頃には無くなっている。
+   * 一方で API のリクエスト URL には必ず event_id が乗っているので、
+   * 通信を覗いているここで拾うのが確実。
    */
-  function postConfig() {
+  let seenEventId = null;
+
+  function sendEventId() {
+    if (!seenEventId) return;
     try {
-      const id = window.__NUXT__?.config?.public?.eventId;
-      if (id) window.postMessage({ __wch: 'wch-config', eventId: String(id) }, window.location.origin);
+      window.postMessage({ __wch: 'wch-config', eventId: seenEventId }, window.location.origin);
     } catch (_) {}
   }
 
-  // config は document_start の時点ではまだ無いので、出てくるまで少し待つ。
-  let tries = 0;
-  const timer = setInterval(() => {
-    tries++;
-    const has = (() => {
-      try {
-        return !!window.__NUXT__?.config?.public?.eventId;
-      } catch (_) {
-        return false;
-      }
-    })();
-    if (has || tries > 40) {
-      clearInterval(timer);
-      postConfig();
-    }
-  }, 250);
+  function noteEventId(url) {
+    const m = /[?&]event_id=(\d+)/.exec(String(url || ''));
+    if (!m || m[1] === seenEventId) return;
+    seenEventId = m[1];
+    sendEventId();
+  }
+
+  // 通信は拡張側が聞き耳を立てる前に終わっていることがある。
+  // 向こうから聞かれたら、そのとき分かっている値を返す。
+  window.addEventListener('message', (e) => {
+    if (e.source === window && e.data && e.data.__wch === 'wch-ask-config') sendEventId();
+  });
 
   /** サークルらしいオブジェクトを含む JSON かどうかの当たり判定。 */
   function looksRelevant(data) {
@@ -90,9 +91,13 @@
   if (typeof origFetch === 'function') {
     window.fetch = function (...args) {
       const p = origFetch.apply(this, args);
+      try {
+        noteEventId(typeof args[0] === 'string' ? args[0] : args[0]?.url);
+      } catch (_) {}
       p.then((res) => {
         try {
           const url = res.url || String(args[0]);
+          noteEventId(url);
           if (IGNORE.test(url)) return;
           const ct = res.headers.get('content-type') || '';
           if (!ct.includes('json')) return;
@@ -110,6 +115,9 @@
 
     XHR.prototype.open = function (method, url, ...rest) {
       this.__wchUrl = url;
+      try {
+        noteEventId(url);
+      } catch (_) {}
       return origOpen.call(this, method, url, ...rest);
     };
 

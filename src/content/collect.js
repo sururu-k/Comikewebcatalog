@@ -144,7 +144,25 @@
     window.addEventListener('message', (e) => {
       if (e.source !== window) return;
       const msg = e.data;
-      if (!msg || msg.__wch !== 'wch-net') return;
+      if (!msg) return;
+
+      // イベント ID はページ本体の window にしか無く、コンテンツスクリプト
+      // （隔離ワールド）からは見えない。MAIN world 側から送ってもらう。
+      // 控えておかないと、次のイベントが始まっても古い event_id を叩き続ける。
+      if (msg.__wch === 'wch-config' && msg.eventId) {
+        store.loadSettings().then((s) => {
+          if (String(s.eventId) !== String(msg.eventId)) {
+            store.saveSettings({ eventId: String(msg.eventId) });
+          }
+        });
+        try {
+          root.WCH.api?.setEventId(msg.eventId);
+        } catch (_) {}
+        emit({ type: 'event-id', eventId: String(msg.eventId) });
+        return;
+      }
+
+      if (msg.__wch !== 'wch-net') return;
       try {
         const rows = scrape.fromApi(msg.data);
         if (rows.length) flush(rows, 'api');
